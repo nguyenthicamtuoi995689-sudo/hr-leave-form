@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hệ Thống Xin Nghỉ Phép</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --primary: #1a56db;
+    --primary-dark: #1341b0;
+    --primary-light: #e8f0fe;
+    --success: #0d9e6e;
+    --success-light: #d1fae5;
+    --warning: #d97706;
+    --warning-light: #fef3c7;
+    --danger: #dc2626;
+    --danger-light: #fee2e2;
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-400: #9ca3af;
+    --gray-500: #6b7280;
+    --gray-600: #4b5563;
+    --gray-700: #374151;
+    --gray-800: #1f2937;
+    --gray-900: #111827;
+    --white: #ffffff;
+    --radius: 10px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+    --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.05);
+    --shadow-lg: 0 10px 15px rgba(0,0,0,0.1), 0 4px 6px rgba(0,0,0,0.05);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: #eef2ff;
+    min-height: 100vh;
+    color: var(--gray-800);
+  }
+
+  /* ── NAV ── */
+  .nav {
+    background: var(--white);
+    border-bottom: 1px solid var(--gray-200);
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+    box-shadow: var(--shadow);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .nav-brand {
+    display: flex; align-items: center; gap: 10px;
+    font-weight: 700; font-size: 17px; color: var(--primary);
+  }
+  .nav-brand svg { width: 28px; height: 28px; }
+  .nav-tabs { display: flex; gap: 4px; }
+  .nav-tab {
+    padding: 8px 16px; border-radius: 8px; cursor: pointer;
+    font-size: 14px; font-weight: 500; color: var(--gray-600);
+    transition: all .15s; border: none; background: none;
+  }
+  .nav-tab:hover { background: var(--gray-100); color: var(--gray-800); }
+  .nav-tab.active { background: var(--primary-light); color: var(--primary); }
+  .nav-badge {
+    background: var(--danger); color: white;
+    border-radius: 99px; font-size: 11px; padding: 1px 6px;
+    margin-left: 4px; font-weight: 700;
+  }
+
+  /* ── PAGES ── */
+  .page { display: none; padding: 28px 24px; max-width: 960px; margin: 0 auto; }
+  .page.active { display: block; }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--white); border-radius: var(--radius);
+    box-shadow: var(--shadow-md); padding: 24px; margin-bottom: 20px;
+  }
+  .card-title {
+    font-size: 16px; font-weight: 700; color: var(--gray-800);
+    margin-bottom: 18px; display: flex; align-items: center; gap: 8px;
+  }
+  .card-title svg { width: 20px; height: 20px; color: var(--primary); }
+
+  /* ── FORM ── */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group.full { grid-column: 1 / -1; }
+  label { font-size: 13px; font-weight: 600; color: var(--gray-700); }
+  label span.req { color: var(--danger); margin-left: 2px; }
+  input, select, textarea {
+    border: 1.5px solid var(--gray-200); border-radius: 8px;
+    padding: 9px 12px; font-size: 14px; color: var(--gray-800);
+    background: var(--gray-50); transition: border .15s, box-shadow .15s;
+    font-family: inherit;
+  }
+  input:focus, select:focus, textarea:focus {
+    outline: none; border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(26,86,219,.12);
+    background: var(--white);
+  }
+  textarea { resize: vertical; min-height: 80px; }
+
+  /* ── BUTTONS ── */
+  .btn {
+    padding: 10px 20px; border-radius: 8px; font-weight: 600;
+    font-size: 14px; cursor: pointer; border: none; transition: all .15s;
+    display: inline-flex; align-items: center; gap: 7px;
+  }
+  .btn-primary { background: var(--primary); color: white; }
+  .btn-primary:hover { background: var(--primary-dark); transform: translateY(-1px); box-shadow: var(--shadow-md); }
+  .btn-success { background: var(--success); color: white; }
+  .btn-success:hover { background: #0a8a5e; }
+  .btn-danger { background: var(--danger); color: white; }
+  .btn-danger:hover { background: #b91c1c; }
+  .btn-outline {
+    background: white; color: var(--primary); border: 1.5px solid var(--primary);
+  }
+  .btn-outline:hover { background: var(--primary-light); }
+  .btn-sm { padding: 6px 12px; font-size: 13px; }
+  .btn:disabled { opacity: .6; cursor: not-allowed; transform: none !important; }
+
+  /* ── STATUS BADGES ── */
+  .badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 10px; border-radius: 99px; font-size: 12px; font-weight: 600;
+  }
+  .badge-pending { background: var(--warning-light); color: var(--warning); }
+  .badge-manager-approved { background: #dbeafe; color: #1d4ed8; }
+  .badge-approved { background: var(--success-light); color: var(--success); }
+  .badge-rejected { background: var(--danger-light); color: var(--danger); }
+  .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+  /* ── TIMELINE ── */
+  .flow-steps {
+    display: flex; align-items: flex-start; gap: 0;
+    margin-bottom: 24px; overflow-x: auto; padding-bottom: 4px;
+  }
+  .flow-step { display: flex; flex-direction: column; align-items: center; flex: 1; min-width: 100px; }
+  .flow-step-icon {
+    width: 38px; height: 38px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; font-weight: 700; z-index: 1;
+    background: var(--gray-200); color: var(--gray-500);
+    border: 2px solid var(--gray-200);
+  }
+  .flow-step.done .flow-step-icon { background: var(--success-light); color: var(--success); border-color: var(--success); }
+  .flow-step.active .flow-step-icon { background: var(--primary-light); color: var(--primary); border-color: var(--primary); animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(26,86,219,.3)} 50%{box-shadow:0 0 0 6px rgba(26,86,219,0)} }
+  .flow-step-label { font-size: 11px; font-weight: 600; color: var(--gray-500); margin-top: 6px; text-align: center; max-width: 90px; line-height: 1.3; }
+  .flow-step.done .flow-step-label { color: var(--success); }
+  .flow-step.active .flow-step-label { color: var(--primary); }
+  .flow-connector { flex: 1; height: 2px; background: var(--gray-200); margin-top: 19px; min-width: 20px; }
+  .flow-connector.done { background: var(--success); }
+
+  /* ── TABLE ── */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th {
+    background: var(--gray-50); padding: 10px 12px;
+    text-align: left; font-size: 12px; font-weight: 700;
+    color: var(--gray-500); text-transform: uppercase; letter-spacing: .04em;
+    border-bottom: 1.5px solid var(--gray-200);
+  }
+  td { padding: 11px 12px; border-bottom: 1px solid var(--gray-100); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--gray-50); }
+
+  /* ── ALERT ── */
+  .alert {
+    border-radius: 8px; padding: 12px 16px; font-size: 14px; margin-bottom: 16px;
+    display: flex; align-items: flex-start; gap: 10px;
+  }
+  .alert svg { width: 18px; height: 18px; flex-shrink: 0; margin-top: 1px; }
+  .alert-info { background: var(--primary-light); color: var(--primary); border-left: 3px solid var(--primary); }
+  .alert-success { background: var(--success-light); color: var(--success); border-left: 3px solid var(--success); }
+  .alert-warning { background: var(--warning-light); color: var(--warning); border-left: 3px solid var(--warning); }
+
+  /* ── SETTINGS ── */
+  .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .setting-section { background: var(--gray-50); border-radius: 8px; padding: 16px; border: 1px solid var(--gray-200); }
+  .setting-section h4 { font-size: 13px; font-weight: 700; color: var(--gray-600); margin-bottom: 12px; text-transform: uppercase; letter-spacing: .05em; }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.5);
+    display: flex; align-items: center; justify-content: center; z-index: 200;
+    opacity: 0; visibility: hidden; transition: all .2s;
+  }
+  .modal-overlay.open { opacity: 1; visibility: visible; }
+  .modal {
+    background: white; border-radius: 12px; padding: 28px;
+    max-width: 500px; width: 90%; box-shadow: var(--shadow-lg);
+    transform: translateY(12px); transition: transform .2s;
+  }
+  .modal-overlay.open .modal { transform: translateY(0); }
+  .modal-title { font-size: 18px; font-weight: 700; color: var(--gray-800); margin-bottom: 16px; }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+
+  /* ── STATS ── */
+  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+  .stat-card {
+    background: white; border-radius: var(--radius); padding: 16px;
+    box-shadow: var(--shadow); border-left: 4px solid transparent;
+  }
+  .stat-card.blue { border-color: var(--primary); }
+  .stat-card.green { border-color: var(--success); }
+  .stat-card.yellow { border-color: var(--warning); }
+  .stat-card.red { border-color: var(--danger); }
+  .stat-num { font-size: 28px; font-weight: 800; color: var(--gray-800); line-height: 1; }
+  .stat-label { font-size: 12px; color: var(--gray-500); margin-top: 4px; font-weight: 500; }
+
+  /* ── TOAST ── */
+  #toast {
+    position: fixed; bottom: 24px; right: 24px; z-index: 999;
+    background: var(--gray-800); color: white; padding: 12px 18px;
+    border-radius: 8px; font-size: 14px; font-weight: 500;
+    transform: translateY(60px); opacity: 0; transition: all .3s;
+    display: flex; align-items: center; gap: 8px; max-width: 320px;
+  }
+  #toast.show { transform: translateY(0); opacity: 1; }
+  #toast.success { background: var(--success); }
+  #toast.error { background: var(--danger); }
+
+  .flex { display: flex; }
+  .items-center { align-items: center; }
+  .justify-between { justify-content: space-between; }
+  .gap-2 { gap: 8px; }
+  .gap-3 { gap: 12px; }
+  .mb-4 { margin-bottom: 16px; }
+  .text-sm { font-size: 13px; }
+  .text-gray { color: var(--gray-500); }
+
+  .spinner {
+    width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.4);
+    border-top-color: white; border-radius: 50%; animation: spin .6s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @media(max-width:640px) {
+    .form-grid { grid-template-columns: 1fr; }
+    .settings-grid { grid-template-columns: 1fr; }
+    .stats-row { grid-template-columns: 1fr 1fr; }
+    .nav-tabs .nav-tab { padding: 8px 10px; font-size: 13px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-brand">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
+      <path d="M7 9h.01M11 9h5M7 12h5M16 12h1"/>
+    </svg>
+    HR Leave System
+  </div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showPage('form')">📝 Xin Nghỉ Phép</button>
+    <button class="nav-tab" onclick="showPage('list')" id="tab-list">📋 Danh Sách <span id="pending-badge" class="nav-badge" style="display:none">0</span></button>
+    <button class="nav-tab" onclick="showPage('hr')">👔 HR Dashboard</button>
+    <button class="nav-tab" onclick="showPage('settings')">⚙️ Cài Đặt</button>
+  </div>
+</nav>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- PAGE: FORM -->
+<div class="page active" id="page-form">
+  <!-- Flow diagram -->
+  <div class="card">
+    <div class="card-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      Quy Trình Duyệt Nghỉ Phép
+    </div>
+    <div class="flow-steps">
+      <div class="flow-step active">
+        <div class="flow-step-icon">1</div>
+        <div class="flow-step-label">Nhân viên điền form</div>
+      </div>
+      <div class="flow-connector"></div>
+      <div class="flow-step">
+        <div class="flow-step-icon">2</div>
+        <div class="flow-step-label">Mail đến HR + Quản lý + CEO</div>
+      </div>
+      <div class="flow-connector"></div>
+      <div class="flow-step">
+        <div class="flow-step-icon">3</div>
+        <div class="flow-step-label">Quản lý duyệt</div>
+      </div>
+      <div class="flow-connector"></div>
+      <div class="flow-step">
+        <div class="flow-step-icon">4</div>
+        <div class="flow-step-label">CEO phê duyệt cuối</div>
+      </div>
+      <div class="flow-connector"></div>
+      <div class="flow-step">
+        <div class="flow-step-icon">5</div>
+        <div class="flow-step-label">Thông báo kết quả</div>
+      </div>
+    </div>
+    <div id="emailjs-warning" class="alert alert-warning">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <div><strong>Chưa cấu hình EmailJS!</strong> Vào tab <strong>⚙️ Cài Đặt</strong> để nhập Service ID, Template ID và Public Key từ EmailJS.com. Email sẽ được gửi sau khi cấu hình xong.</div>
+    </div>
+  </div>
+
+  <!-- Form -->
+  <div class="card">
+    <div class="card-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      Form Xin Nghỉ Phép
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Họ và tên <span class="req">*</span></label>
+        <input type="text" id="f_name" placeholder="Nguyễn Văn A">
+      </div>
+      <div class="form-group">
+        <label>Mã nhân viên <span class="req">*</span></label>
+        <input type="text" id="f_id" placeholder="NV001">
+      </div>
+      <div class="form-group">
+        <label>Email nhân viên <span class="req">*</span></label>
+        <input type="email" id="f_email" placeholder="nhanvien@company.com">
+      </div>
+      <div class="form-group">
+        <label>Phòng ban <span class="req">*</span></label>
+        <select id="f_dept">
+          <option value="">-- Chọn phòng ban --</option>
+          <option>Kỹ thuật / IT</option>
+          <option>Kinh doanh</option>
+          <option>Marketing</option>
+          <option>Kế toán / Tài chính</option>
+          <option>Nhân sự (HR)</option>
+          <option>Vận hành</option>
+          <option>Khác</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Loại nghỉ phép <span class="req">*</span></label>
+        <select id="f_type">
+          <option value="">-- Chọn loại nghỉ --</option>
+          <option>Nghỉ phép năm</option>
+          <option>Nghỉ ốm / Bệnh</option>
+          <option>Nghỉ thai sản</option>
+          <option>Nghỉ việc riêng</option>
+          <option>Nghỉ không lương</option>
+          <option>Nghỉ bù</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Số ngày nghỉ <span class="req">*</span></label>
+        <select id="f_duration">
+          <option value="">-- Chọn --</option>
+          <option>0.5 (buổi sáng)</option>
+          <option>0.5 (buổi chiều)</option>
+          <option>1 ngày</option>
+          <option>2 ngày</option>
+          <option>3 ngày</option>
+          <option>Nhiều hơn (ghi rõ)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Ngày bắt đầu <span class="req">*</span></label>
+        <input type="date" id="f_from">
+      </div>
+      <div class="form-group">
+        <label>Ngày kết thúc <span class="req">*</span></label>
+        <input type="date" id="f_to">
+      </div>
+      <div class="form-group">
+        <label>Người bàn giao công việc</label>
+        <input type="text" id="f_handover" placeholder="Tên đồng nghiệp tiếp nhận">
+      </div>
+      <div class="form-group">
+        <label>Số điện thoại liên hệ</label>
+        <input type="tel" id="f_phone" placeholder="0901234567">
+      </div>
+      <div class="form-group full">
+        <label>Lý do xin nghỉ <span class="req">*</span></label>
+        <textarea id="f_reason" placeholder="Nêu rõ lý do xin nghỉ phép..."></textarea>
+      </div>
+    </div>
+    <div style="margin-top:20px; display:flex; justify-content:flex-end; gap:10px;">
+      <button class="btn btn-outline" onclick="resetForm()">🔄 Nhập lại</button>
+      <button class="btn btn-primary" id="submit-btn" onclick="submitForm()">
+        📧 Gửi đơn xin nghỉ
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE: LIST -->
+<div class="page" id="page-list">
+  <div class="stats-row">
+    <div class="stat-card blue">
+      <div class="stat-num" id="stat-total">0</div>
+      <div class="stat-label">Tổng đơn</div>
+    </div>
+    <div class="stat-card yellow">
+      <div class="stat-num" id="stat-pending">0</div>
+      <div class="stat-label">Chờ duyệt</div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-num" id="stat-approved">0</div>
+      <div class="stat-label">Đã duyệt</div>
+    </div>
+    <div class="stat-card red">
+      <div class="stat-num" id="stat-rejected">0</div>
+      <div class="stat-label">Từ chối</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="flex items-center justify-between mb-4">
+      <div class="card-title" style="margin-bottom:0">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
+        Danh Sách Đơn Nghỉ Phép
+      </div>
+      <div class="flex gap-2">
+        <select id="filter-status" onchange="renderList()" style="padding:7px 10px;font-size:13px;border-radius:7px;border:1.5px solid var(--gray-200)">
+          <option value="">Tất cả trạng thái</option>
+          <option value="pending">Chờ duyệt</option>
+          <option value="manager_approved">Quản lý đã duyệt</option>
+          <option value="approved">Đã duyệt</option>
+          <option value="rejected">Từ chối</option>
+        </select>
+        <button class="btn btn-outline btn-sm" onclick="exportExcel()">📊 Xuất Excel</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Nhân viên</th>
+            <th>Phòng ban</th>
+            <th>Loại nghỉ</th>
+            <th>Từ ngày</th>
+            <th>Đến ngày</th>
+            <th>Số ngày</th>
+            <th>Trạng thái</th>
+            <th>Hành động</th>
+          </tr>
+        </thead>
+        <tbody id="list-body">
+          <tr><td colspan="8" style="text-align:center;color:var(--gray-400);padding:32px">Chưa có đơn nào</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE: HR DASHBOARD -->
+<div class="page" id="page-hr">
+  <div class="card">
+    <div class="flex items-center justify-between mb-4">
+      <div class="card-title" style="margin-bottom:0">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+        HR Dashboard – Chấm Công
+      </div>
+      <div class="flex gap-2">
+        <input type="month" id="hr-month" style="padding:7px 10px;border-radius:7px;border:1.5px solid var(--gray-200);font-size:13px" onchange="renderHR()">
+        <button class="btn btn-success btn-sm" onclick="exportExcelHR()">📥 Xuất Excel Chấm Công</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table id="hr-table">
+        <thead>
+          <tr>
+            <th>Mã NV</th>
+            <th>Họ tên</th>
+            <th>Phòng ban</th>
+            <th>Loại nghỉ</th>
+            <th>Từ ngày</th>
+            <th>Đến ngày</th>
+            <th>Số ngày</th>
+            <th>Trạng thái</th>
+            <th>Ghi chú</th>
+          </tr>
+        </thead>
+        <tbody id="hr-body">
+          <tr><td colspan="9" style="text-align:center;color:var(--gray-400);padding:32px">Chưa có dữ liệu</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE: SETTINGS -->
+<div class="page" id="page-settings">
+  <div class="card">
+    <div class="card-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M4.93 19.07l1.41-1.41M19.07 19.07l-1.41-1.41M21 12h-2M5 12H3M12 19v2M12 3V5"/></svg>
+      Cài Đặt EmailJS
+    </div>
+    <div class="alert alert-info" style="margin-bottom:20px">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+      <div>
+        <strong>Hướng dẫn cài đặt EmailJS:</strong><br>
+        1. Đăng ký miễn phí tại <strong>emailjs.com</strong><br>
+        2. Vào <em>Email Services</em> → Add Service → chọn Gmail → lấy <strong>Service ID</strong><br>
+        3. Vào <em>Email Templates</em> → Create Template → lấy <strong>Template ID</strong><br>
+        4. Vào <em>Account</em> → lấy <strong>Public Key</strong><br>
+        5. Điền các thông tin bên dưới và nhấn Lưu
+      </div>
+    </div>
+
+    <div class="settings-grid">
+      <div class="setting-section">
+        <h4>🔑 EmailJS Credentials</h4>
+        <div class="form-group" style="margin-bottom:12px">
+          <label>Service ID <span class="req">*</span></label>
+          <input type="text" id="cfg_service" placeholder="service_xxxxxxx">
+        </div>
+        <div class="form-group" style="margin-bottom:12px">
+          <label>Template ID <span class="req">*</span></label>
+          <input type="text" id="cfg_template" placeholder="template_xxxxxxx">
+        </div>
+        <div class="form-group">
+          <label>Public Key <span class="req">*</span></label>
+          <input type="text" id="cfg_pubkey" placeholder="xxxxxxxxxxxxxxx">
+        </div>
+      </div>
+
+      <div class="setting-section">
+        <h4>📧 Email Người Nhận</h4>
+        <div class="form-group" style="margin-bottom:12px">
+          <label>Email HR <span class="req">*</span></label>
+          <input type="email" id="cfg_hr" placeholder="hr@company.com">
+        </div>
+        <div class="form-group" style="margin-bottom:12px">
+          <label>Email Quản lý <span class="req">*</span></label>
+          <input type="email" id="cfg_manager" placeholder="manager@company.com">
+        </div>
+        <div class="form-group">
+          <label>Email CEO <span class="req">*</span></label>
+          <input type="email" id="cfg_ceo" placeholder="ceo@company.com">
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:20px; display:flex; justify-content:flex-end; gap:10px;">
+      <button class="btn btn-outline" onclick="testEmail()">🧪 Test gửi email</button>
+      <button class="btn btn-primary" onclick="saveSettings()">💾 Lưu cài đặt</button>
+    </div>
+  </div>
+
+  <!-- Template hướng dẫn -->
+  <div class="card">
+    <div class="card-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+      Mẫu Email Template (dán vào EmailJS)
+    </div>
+    <div style="background:var(--gray-50);border:1px solid var(--gray-200);border-radius:8px;padding:16px;font-size:13px;font-family:monospace;line-height:1.8;color:var(--gray-700)">
+      <strong>Subject:</strong> [Xin Nghỉ Phép] {{employee_name}} – {{leave_type}} – {{from_date}}<br><br>
+      Kính gửi Phòng Nhân Sự / Quản lý / Ban Lãnh đạo,<br><br>
+      Nhân viên <strong>{{employee_name}}</strong> (Mã: {{employee_id}}) thuộc phòng <strong>{{department}}</strong> vừa gửi đơn xin nghỉ phép:<br><br>
+      📅 Loại nghỉ: {{leave_type}}<br>
+      📆 Từ ngày: {{from_date}}<br>
+      📆 Đến ngày: {{to_date}}<br>
+      ⏱ Số ngày: {{duration}}<br>
+      📝 Lý do: {{reason}}<br>
+      🔄 Người bàn giao: {{handover}}<br>
+      📱 Liên hệ: {{phone}}<br><br>
+      Vui lòng xem xét và phê duyệt đơn này.<br><br>
+      Trân trọng,<br>
+      Hệ thống HR Leave Management
+    </div>
+    <div style="margin-top:12px;font-size:13px;color:var(--gray-500)">
+      💡 <strong>Lưu ý:</strong> Trong EmailJS template, đặt <code>To Email</code> = <code>{{to_email}}</code> để hệ thống tự điền địa chỉ người nhận (HR, Manager, CEO).
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Approve/Reject -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-title" id="modal-title">Duyệt đơn</div>
+    <div id="modal-body"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal()">Hủy</button>
+      <button class="btn btn-success" id="modal-approve-btn" onclick="approveAction()">✅ Duyệt</button>
+      <button class="btn btn-danger" id="modal-reject-btn" onclick="rejectAction()">❌ Từ chối</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>
+// ── STATE ──
+let leaves = JSON.parse(localStorage.getItem('hr_leaves') || '[]');
+let config = JSON.parse(localStorage.getItem('hr_config') || '{}');
+let currentModalId = null;
+let currentModalRole = null;
+
+// ── INIT ──
+(function init() {
+  loadConfig();
+  checkEmailJSWarning();
+  renderList();
+  renderHR();
+  const today = new Date();
+  document.getElementById('hr-month').value = today.toISOString().slice(0,7);
+  const d = document.getElementById('f_from');
+  const t = document.getElementById('f_to');
+  d.min = today.toISOString().slice(0,10);
+  t.min = today.toISOString().slice(0,10);
+  d.addEventListener('change', () => { t.min = d.value; });
+  updateStats();
+})();
+
+function loadConfig() {
+  if (config.service) document.getElementById('cfg_service').value = config.service;
+  if (config.template) document.getElementById('cfg_template').value = config.template;
+  if (config.pubkey) document.getElementById('cfg_pubkey').value = config.pubkey;
+  if (config.hr_email) document.getElementById('cfg_hr').value = config.hr_email;
+  if (config.manager_email) document.getElementById('cfg_manager').value = config.manager_email;
+  if (config.ceo_email) document.getElementById('cfg_ceo').value = config.ceo_email;
+}
+
+function checkEmailJSWarning() {
+  const warn = document.getElementById('emailjs-warning');
+  if (config.service && config.template && config.pubkey) {
+    warn.style.display = 'none';
+  } else {
+    warn.style.display = 'flex';
+  }
+}
+
+// ── SAVE SETTINGS ──
+function saveSettings() {
+  config = {
+    service: document.getElementById('cfg_service').value.trim(),
+    template: document.getElementById('cfg_template').value.trim(),
+    pubkey: document.getElementById('cfg_pubkey').value.trim(),
+    hr_email: document.getElementById('cfg_hr').value.trim(),
+    manager_email: document.getElementById('cfg_manager').value.trim(),
+    ceo_email: document.getElementById('cfg_ceo').value.trim(),
+  };
+  localStorage.setItem('hr_config', JSON.stringify(config));
+  checkEmailJSWarning();
+  showToast('✅ Đã lưu cài đặt!', 'success');
+}
+
+// ── NAVIGATION ──
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  event.currentTarget.classList.add('active');
+  if (id === 'hr') renderHR();
+  if (id === 'list') { renderList(); updateStats(); }
+}
+
+// ── SUBMIT FORM ──
+async function submitForm() {
+  const fields = {
+    name: document.getElementById('f_name').value.trim(),
+    emp_id: document.getElementById('f_id').value.trim(),
+    email: document.getElementById('f_email').value.trim(),
+    dept: document.getElementById('f_dept').value,
+    type: document.getElementById('f_type').value,
+    duration: document.getElementById('f_duration').value,
+    from: document.getElementById('f_from').value,
+    to: document.getElementById('f_to').value,
+    reason: document.getElementById('f_reason').value.trim(),
+    handover: document.getElementById('f_handover').value.trim() || 'Không có',
+    phone: document.getElementById('f_phone').value.trim() || 'Không cung cấp',
+  };
+
+  // Validate
+  const req = ['name','emp_id','email','dept','type','duration','from','to','reason'];
+  for (let k of req) {
+    if (!fields[k]) { showToast('⚠️ Vui lòng điền đầy đủ thông tin bắt buộc!', 'error'); return; }
+  }
+  if (fields.from > fields.to) { showToast('⚠️ Ngày kết thúc phải sau ngày bắt đầu!', 'error'); return; }
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> Đang gửi...';
+
+  // Create record
+  const record = {
+    id: 'LP' + Date.now(),
+    ...fields,
+    status: 'pending',
+    submitted_at: new Date().toISOString(),
+    manager_approved_at: null,
+    ceo_approved_at: null,
+    rejected_by: null,
+    reject_reason: '',
+  };
+
+  // Try send email
+  let emailSent = false;
+  if (config.service && config.template && config.pubkey) {
+    emailjs.init(config.pubkey);
+    const recipients = [config.hr_email, config.manager_email, config.ceo_email].filter(Boolean);
+    const baseParams = {
+      employee_name: fields.name,
+      employee_id: fields.emp_id,
+      department: fields.dept,
+      leave_type: fields.type,
+      from_date: formatDate(fields.from),
+      to_date: formatDate(fields.to),
+      duration: fields.duration,
+      reason: fields.reason,
+      handover: fields.handover,
+      phone: fields.phone,
+    };
+    try {
+      for (let email of recipients) {
+        await emailjs.send(config.service, config.template, { ...baseParams, to_email: email });
+      }
+      emailSent = true;
+    } catch(e) {
+      console.error(e);
+    }
+  }
+
+  leaves.push(record);
+  save();
+  updateStats();
+  renderList();
+  resetForm();
+  btn.disabled = false;
+  btn.innerHTML = '📧 Gửi đơn xin nghỉ';
+
+  if (emailSent) {
+    showToast('✅ Đơn đã gửi! Email thông báo đến HR, Quản lý & CEO.', 'success');
+  } else {
+    showToast('📋 Đơn đã được lưu (email chưa cấu hình hoặc lỗi gửi)', '');
+  }
+}
+
+// ── RENDER LIST ──
+function renderList() {
+  const filter = document.getElementById('filter-status')?.value || '';
+  const body = document.getElementById('list-body');
+  let data = leaves;
+  if (filter) data = data.filter(l => l.status === filter);
+  if (!data.length) {
+    body.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--gray-400);padding:32px">Chưa có đơn nào</td></tr>';
+    return;
+  }
+  body.innerHTML = data.slice().reverse().map(l => `
+    <tr>
+      <td><strong>${l.name}</strong><br><span class="text-sm text-gray">${l.emp_id} • ${l.email}</span></td>
+      <td>${l.dept}</td>
+      <td>${l.type}</td>
+      <td>${formatDate(l.from)}</td>
+      <td>${formatDate(l.to)}</td>
+      <td>${l.duration}</td>
+      <td>${statusBadge(l.status)}</td>
+      <td>${actionButtons(l)}</td>
+    </tr>
+  `).join('');
+  updateStats();
+}
+
+function statusBadge(s) {
+  const map = {
+    pending: ['badge-pending','⏳ Chờ duyệt'],
+    manager_approved: ['badge-manager-approved','👔 QL đã duyệt'],
+    approved: ['badge-approved','✅ Đã duyệt'],
+    rejected: ['badge-rejected','❌ Từ chối'],
+  };
+  const [cls, label] = map[s] || ['badge-pending', s];
+  return `<span class="badge ${cls}"><span class="badge-dot"></span>${label}</span>`;
+}
+
+function actionButtons(l) {
+  if (l.status === 'pending') {
+    return `<div class="flex gap-2">
+      <button class="btn btn-sm btn-success" onclick="openModal('${l.id}','manager')">✅ QL duyệt</button>
+      <button class="btn btn-sm btn-danger" onclick="openModal('${l.id}','reject')">❌ Từ chối</button>
+    </div>`;
+  }
+  if (l.status === 'manager_approved') {
+    return `<div class="flex gap-2">
+      <button class="btn btn-sm btn-primary" onclick="openModal('${l.id}','ceo')">👑 CEO duyệt</button>
+      <button class="btn btn-sm btn-danger" onclick="openModal('${l.id}','reject')">❌ Từ chối</button>
+    </div>`;
+  }
+  return `<span class="text-sm text-gray">—</span>`;
+}
+
+// ── MODAL ──
+function openModal(id, role) {
+  currentModalId = id;
+  currentModalRole = role;
+  const l = leaves.find(x => x.id === id);
+  const modal = document.getElementById('modal');
+  const title = document.getElementById('modal-title');
+  const body = document.getElementById('modal-body');
+  const approveBtn = document.getElementById('modal-approve-btn');
+  const rejectBtn = document.getElementById('modal-reject-btn');
+
+  if (role === 'reject') {
+    title.textContent = '❌ Từ chối đơn nghỉ phép';
+    approveBtn.style.display = 'none';
+    rejectBtn.style.display = '';
+    body.innerHTML = `
+      <p style="color:var(--gray-600);font-size:14px;margin-bottom:12px">Xác nhận từ chối đơn của <strong>${l.name}</strong> (${l.from} – ${l.to})?</p>
+      <div class="form-group">
+        <label>Lý do từ chối</label>
+        <textarea id="reject-reason" placeholder="Nhập lý do từ chối..."></textarea>
+      </div>`;
+  } else {
+    const roleLabel = role === 'manager' ? 'Quản lý' : 'CEO';
+    title.textContent = `✅ ${roleLabel} duyệt đơn`;
+    approveBtn.style.display = '';
+    rejectBtn.style.display = 'none';
+    body.innerHTML = `<p style="color:var(--gray-600);font-size:14px">Duyệt đơn xin nghỉ của <strong>${l.name}</strong> từ <strong>${formatDate(l.from)}</strong> đến <strong>${formatDate(l.to)}</strong> (${l.duration})?</p>`;
+  }
+  modal.classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+  currentModalId = null;
+  currentModalRole = null;
+}
+
+async function approveAction() {
+  const l = leaves.find(x => x.id === currentModalId);
+  if (!l) return;
+  if (currentModalRole === 'manager') {
+    l.status = 'manager_approved';
+    l.manager_approved_at = new Date().toISOString();
+    showToast('👔 Quản lý đã duyệt! Đơn đang chờ CEO phê duyệt.', 'success');
+  } else if (currentModalRole === 'ceo') {
+    l.status = 'approved';
+    l.ceo_approved_at = new Date().toISOString();
+    showToast('✅ CEO đã duyệt! Gửi kết quả đến nhân viên & HR.', 'success');
+    await sendResultEmail(l, 'approved');
+  }
+  save(); renderList(); renderHR(); closeModal();
+}
+
+async function rejectAction() {
+  const l = leaves.find(x => x.id === currentModalId);
+  if (!l) return;
+  l.status = 'rejected';
+  l.rejected_by = currentModalRole === 'manager' ? 'Quản lý' : 'CEO';
+  l.reject_reason = document.getElementById('reject-reason')?.value || '';
+  save(); renderList(); renderHR();
+  showToast('❌ Đơn đã bị từ chối.', 'error');
+  await sendResultEmail(l, 'rejected');
+  closeModal();
+}
+
+async function sendResultEmail(l, result) {
+  if (!config.service || !config.template || !config.pubkey) return;
+  emailjs.init(config.pubkey);
+  const status = result === 'approved' ? '✅ ĐÃ ĐƯỢC DUYỆT' : '❌ BỊ TỪ CHỐI';
+  const note = result === 'rejected' ? `\nLý do: ${l.reject_reason}` : '';
+  const params = {
+    employee_name: l.name,
+    employee_id: l.emp_id,
+    department: l.dept,
+    leave_type: l.type,
+    from_date: formatDate(l.from),
+    to_date: formatDate(l.to),
+    duration: l.duration,
+    reason: `Kết quả: ${status}${note}`,
+    handover: l.handover,
+    phone: l.phone,
+  };
+  const targets = [l.email, config.hr_email].filter(Boolean);
+  for (let email of targets) {
+    try { await emailjs.send(config.service, config.template, { ...params, to_email: email }); } catch(e) {}
+  }
+}
+
+// ── HR RENDER ──
+function renderHR() {
+  const month = document.getElementById('hr-month')?.value || '';
+  const body = document.getElementById('hr-body');
+  let data = leaves.filter(l => l.status === 'approved');
+  if (month) data = data.filter(l => l.from.startsWith(month) || l.to.startsWith(month));
+  if (!data.length) {
+    body.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--gray-400);padding:32px">Không có dữ liệu tháng này</td></tr>';
+    return;
+  }
+  body.innerHTML = data.map(l => `
+    <tr>
+      <td>${l.emp_id}</td>
+      <td>${l.name}</td>
+      <td>${l.dept}</td>
+      <td>${l.type}</td>
+      <td>${formatDate(l.from)}</td>
+      <td>${formatDate(l.to)}</td>
+      <td><strong>${l.duration}</strong></td>
+      <td>${statusBadge(l.status)}</td>
+      <td style="font-size:12px;color:var(--gray-500)">${l.reason.slice(0,40)}${l.reason.length>40?'...':''}</td>
+    </tr>
+  `).join('');
+}
+
+// ── EXPORT EXCEL ──
+function exportExcel() {
+  const filter = document.getElementById('filter-status').value;
+  let data = filter ? leaves.filter(l => l.status === filter) : leaves;
+  const rows = data.map(l => ({
+    'Mã đơn': l.id,
+    'Mã NV': l.emp_id,
+    'Họ tên': l.name,
+    'Email': l.email,
+    'Phòng ban': l.dept,
+    'Loại nghỉ': l.type,
+    'Số ngày': l.duration,
+    'Từ ngày': formatDate(l.from),
+    'Đến ngày': formatDate(l.to),
+    'Lý do': l.reason,
+    'Người bàn giao': l.handover,
+    'SĐT liên hệ': l.phone,
+    'Trạng thái': statusText(l.status),
+    'Ngày gửi': formatDateTime(l.submitted_at),
+    'QL duyệt lúc': l.manager_approved_at ? formatDateTime(l.manager_approved_at) : '',
+    'CEO duyệt lúc': l.ceo_approved_at ? formatDateTime(l.ceo_approved_at) : '',
+    'Từ chối bởi': l.rejected_by || '',
+    'Lý do từ chối': l.reject_reason || '',
+  }));
+  exportToExcel(rows, 'DanhSach_NghiPhep_' + new Date().toLocaleDateString('vi-VN').replace(/\//g,'-'));
+}
+
+function exportExcelHR() {
+  const month = document.getElementById('hr-month').value;
+  let data = leaves.filter(l => l.status === 'approved');
+  if (month) data = data.filter(l => l.from.startsWith(month) || l.to.startsWith(month));
+  const rows = data.map(l => ({
+    'Mã NV': l.emp_id,
+    'Họ tên': l.name,
+    'Phòng ban': l.dept,
+    'Loại nghỉ': l.type,
+    'Từ ngày': formatDate(l.from),
+    'Đến ngày': formatDate(l.to),
+    'Số ngày nghỉ': l.duration,
+    'Lý do': l.reason,
+    'Người bàn giao': l.handover,
+    'Ngày CEO duyệt': l.ceo_approved_at ? formatDateTime(l.ceo_approved_at) : '',
+    'Ghi chú chấm công': '',
+  }));
+  const label = month ? month.replace('-','_') : 'TatCa';
+  exportToExcel(rows, 'ChamCong_NghiPhep_' + label);
+}
+
+function exportToExcel(rows, filename) {
+  if (!rows.length) { showToast('⚠️ Không có dữ liệu để xuất!', 'error'); return; }
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.json_to_sheet(rows);
+  // Style header width
+  const cols = Object.keys(rows[0]).map(k => ({ wch: Math.max(k.length, 16) }));
+  ws['!cols'] = cols;
+  XLSX.utils.book_append_sheet(wb, ws, 'Nghỉ Phép');
+  XLSX.writeFile(wb, filename + '.xlsx');
+  showToast('📊 Xuất Excel thành công!', 'success');
+}
+
+// ── TEST EMAIL ──
+async function testEmail() {
+  const s = document.getElementById('cfg_service').value.trim();
+  const t = document.getElementById('cfg_template').value.trim();
+  const p = document.getElementById('cfg_pubkey').value.trim();
+  const hr = document.getElementById('cfg_hr').value.trim();
+  if (!s || !t || !p || !hr) { showToast('⚠️ Điền đầy đủ Service ID, Template ID, Public Key và Email HR!', 'error'); return; }
+  emailjs.init(p);
+  try {
+    await emailjs.send(s, t, {
+      employee_name: 'Test User', employee_id: 'NV000', department: 'IT',
+      leave_type: 'Test', from_date: '01/01/2025', to_date: '01/01/2025',
+      duration: '1 ngày', reason: 'Đây là email kiểm tra từ HR System', handover: 'N/A', phone: 'N/A', to_email: hr,
+    });
+    showToast('✅ Email test đã gửi thành công đến ' + hr, 'success');
+  } catch(e) {
+    showToast('❌ Gửi thất bại: ' + (e.text || e.message || 'Lỗi không xác định'), 'error');
+  }
+}
+
+// ── STATS ──
+function updateStats() {
+  document.getElementById('stat-total').textContent = leaves.length;
+  document.getElementById('stat-pending').textContent = leaves.filter(l => l.status === 'pending' || l.status === 'manager_approved').length;
+  document.getElementById('stat-approved').textContent = leaves.filter(l => l.status === 'approved').length;
+  document.getElementById('stat-rejected').textContent = leaves.filter(l => l.status === 'rejected').length;
+  const pendingCount = leaves.filter(l => l.status === 'pending' || l.status === 'manager_approved').length;
+  const badge = document.getElementById('pending-badge');
+  badge.style.display = pendingCount > 0 ? '' : 'none';
+  badge.textContent = pendingCount;
+}
+
+// ── UTILS ──
+function save() {
+  localStorage.setItem('hr_leaves', JSON.stringify(leaves));
+}
+function resetForm() {
+  ['f_name','f_id','f_email','f_dept','f_type','f_duration','f_from','f_to','f_reason','f_handover','f_phone'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+}
+function formatDate(d) {
+  if (!d) return '';
+  const [y,m,dd] = d.split('-');
+  return `${dd}/${m}/${y}`;
+}
+function formatDateTime(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return d.toLocaleString('vi-VN');
+}
+function statusText(s) {
+  return { pending:'Chờ duyệt', manager_approved:'QL đã duyệt', approved:'Đã duyệt', rejected:'Từ chối' }[s] || s;
+}
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'show ' + (type || '');
+  setTimeout(() => { t.className = ''; }, 3500);
+}
+</script>
+</body>
+</html>
